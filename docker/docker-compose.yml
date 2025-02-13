@@ -6,20 +6,19 @@ services:
     ports:
       - "7860:7860"
     volumes:
-      - langflow_data:/app/data
+      - data_volume:/app/data/langflow  # Langflow data in subdirectory
     depends_on:
       - qdrant
       - dagster-webserver
-      - minio  # Minio dependency
+      - minio
     environment:
-      - LANGFLOW_DATABASE_URL=sqlite:///data/langflow.db
+      - LANGFLOW_DATABASE_URL=sqlite:///data/langflow/langflow.db # Updated path
       - QDRANT_URL=qdrant
       - QDRANT_PORT=6333
-      # Minio configuration for Langflow (example)
       - LANGFLOW_S3_ENDPOINT=minio:9000
       - LANGFLOW_S3_ACCESS_KEY_ID=aqyn
       - LANGFLOW_S3_SECRET_ACCESS_KEY=aqyn
-      - LANGFLOW_S3_BUCKET_NAME=aqyn-bucket # Example bucket name
+      - LANGFLOW_S3_BUCKET_NAME=aqyn-bucket
 
   qdrant:
     image: qdrant/qdrant:latest
@@ -27,32 +26,29 @@ services:
       - "6333:6333"
       - "6334:6334"
     volumes:
-      - qdrant_data:/qdrant/data
+      - data_volume:/qdrant/data  # Qdrant data in subdirectory
 
   dagster-webserver:
     image: dagster/dagster:latest
     ports:
       - "3000:3000"
     volumes:
-      - ./dagster_home:/opt/dagster/dagster_home
+      - data_volume:/opt/dagster/dagster_home # Dagster home in subdirectory
       - ./dags:/opt/dagster/dags
     environment:
       - DAGSTER_HOME=/opt/dagster/dagster_home
-      - DAGSTER_DATABASE_URL=sqlite:///data/dagster.db
+      - DAGSTER_DATABASE_URL=sqlite:///data/dagster/dagster.db # Updated path
 
   minio:
     image: minio/minio:latest
     ports:
-      - "9000:9000" # Minio web UI and API
-      - "9001:9001" # Minio console (optional)
+      - "9000:9000"
+      - "9001:9001"
     environment:
-      MINIO_ACCESS_KEY: aqyn  # Access key
-      MINIO_SECRET_KEY: aqyn  # Secret key
+      MINIO_ACCESS_KEY: aqyn
+      MINIO_SECRET_KEY: aqyn
     volumes:
-      - minio_data:/data # Persist Minio data
+      - data_volume:/data/minio  # Minio data in subdirectory
 
 volumes:
-  langflow_data:
-  qdrant_data:
-  dagster_home:
-  minio_data: # Minio data volume
+  data_volume:  # Single named volume
