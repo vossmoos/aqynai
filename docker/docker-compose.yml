@@ -2,7 +2,9 @@ version: "3.9"
 
 services:
   langflow:
-    image: langflow/langflow:latest
+    user: root
+    image: langflowai/langflow:latest 
+    pull_policy: always  
     ports:
       - "7860:7860"
     volumes:
