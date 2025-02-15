@@ -1,0 +1,6 @@
+dagster
+dagster-webserver
+langchain
+langchain-community
+langchain-qdrant
+qdrant-client

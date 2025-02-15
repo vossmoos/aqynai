@@ -15,6 +15,7 @@ services:
       - LANGFLOW_DATABASE_URL=sqlite:///data/langflow/langflow.db # Updated path
       - QDRANT_URL=qdrant
       - QDRANT_PORT=6333
+      - QDRANT_COLLECTION=aqyn
       - LANGFLOW_S3_ENDPOINT=minio:9000
       - LANGFLOW_S3_ACCESS_KEY_ID=aqyn
       - LANGFLOW_S3_SECRET_ACCESS_KEY=aqyn
@@ -29,15 +30,21 @@ services:
       - data_volume:/qdrant/data  # Qdrant data in subdirectory
 
   dagster-webserver:
-    image: dagster/dagster:latest
+    build:
+      context: .
+      dockerfile: ./dag/Dockerfile
     ports:
       - "3000:3000"
-    volumes:
-      - data_volume:/opt/dagster/dagster_home # Dagster home in subdirectory
-      - ./dags:/opt/dagster/dags
     environment:
-      - DAGSTER_HOME=/opt/dagster/dagster_home
-      - DAGSTER_DATABASE_URL=sqlite:///data/dagster/dagster.db # Updated path
+      - PYTHONPATH=/opt/dagster/app
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - QDRANT_COLLECTION=aqyn
+      - DAGSTER_HOME=/opt/dagster/dagster_home  # Add this line
+    depends_on:
+      - qdrant
+    command: ["dagster-webserver", "-h", "0.0.0.0", "-p", "3000", "-w", "/opt/dagster/app/workspace.yaml"]
+
 
   minio:
     image: minio/minio:latest
