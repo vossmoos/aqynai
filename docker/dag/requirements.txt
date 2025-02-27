@@ -4,3 +4,5 @@ langchain
 langchain-community
 langchain-qdrant
 qdrant-client
+dagster-docker
+dagster-graphql

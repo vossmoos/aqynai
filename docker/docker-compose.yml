@@ -1,27 +1,28 @@
 version: "3.9"
 
 services:
-  langflow:
-    user: root
-    image: langflowai/langflow:latest 
-    pull_policy: always  
-    ports:
-      - "7860:7860"
-    volumes:
-      - data_volume:/app/data/langflow  # Langflow data in subdirectory
-    depends_on:
-      - qdrant
-      - dagster-webserver
-      - minio
-    environment:
-      - LANGFLOW_DATABASE_URL=sqlite:///data/langflow/langflow.db # Updated path
-      - QDRANT_URL=qdrant
-      - QDRANT_PORT=6333
-      - QDRANT_COLLECTION=aqyn
-      - LANGFLOW_S3_ENDPOINT=minio:9000
-      - LANGFLOW_S3_ACCESS_KEY_ID=aqyn
-      - LANGFLOW_S3_SECRET_ACCESS_KEY=aqyn
-      - LANGFLOW_S3_BUCKET_NAME=aqyn-bucket
+#   langflow:
+#     user: root
+#     image: langflowai/langflow:latest 
+#     pull_policy: always  
+#     ports:
+#       - "7860:7860"
+#     volumes:
+#       - data_volume:/app/data/langflow  # Langflow data in subdirectory
+#     depends_on:
+#       - qdrant
+#       - dagster-webserver
+#       - minio
+#     environment:
+#       - LANGFLOW_DATABASE_URL=sqlite:///data/langflow/langflow.db # Updated path
+#       - QDRANT_URL=qdrant
+#       - QDRANT_PORT=6333
+#       - QDRANT_COLLECTION=aqyn
+#       - LANGFLOW_LOAD_FLOWS_PATH=/tmp
+#       - LANGFLOW_S3_ENDPOINT=minio:9000
+#       - LANGFLOW_S3_ACCESS_KEY_ID=aqyn
+#       - LANGFLOW_S3_SECRET_ACCESS_KEY=aqyn
+#       - LANGFLOW_S3_BUCKET_NAME=aqyn-bucket
 
   qdrant:
     image: qdrant/qdrant:latest
@@ -45,19 +46,36 @@ services:
       - DAGSTER_HOME=/opt/dagster/dagster_home  # Add this line
     depends_on:
       - qdrant
+    volumes:
+      - dagster_home:/opt/dagster/dagster_home
     command: ["dagster-webserver", "-h", "0.0.0.0", "-p", "3000", "-w", "/opt/dagster/app/workspace.yaml"]
 
-
-  minio:
-    image: minio/minio:latest
-    ports:
-      - "9000:9000"
-      - "9001:9001"
+  dagster-daemon:
+    build:
+      context: .
+      dockerfile: ./dag/Dockerfile
     environment:
-      MINIO_ACCESS_KEY: aqyn
-      MINIO_SECRET_KEY: aqyn
-    volumes:
-      - data_volume:/data/minio  # Minio data in subdirectory
+      - DAGSTER_HOME=/opt/dagster/dagster_home
+    depends_on:
+      - dagster-webserver
+    volumes: # Make docker client accessible so we can launch containers using host docker
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/io_manager_storage:/tmp/io_manager_storage
+      - dagster_home:/opt/dagster/dagster_home
+    command: ["dagster-daemon", "run"]
+
+
+  # minio:
+  #   image: minio/minio:latest
+  #   ports:
+  #     - "9000:9000"
+  #     - "9001:9001"
+  #   environment:
+  #     MINIO_ACCESS_KEY: aqyn
+  #     MINIO_SECRET_KEY: aqyn
+  #   volumes:
+  #     - data_volume:/data/minio  # Minio data in subdirectory
 
 volumes:
   data_volume:  # Single named volume
+  dagster_home:

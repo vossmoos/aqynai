@@ -12,5 +12,6 @@ RUN mkdir -p $DAGSTER_HOME
 
 # Copy dagster.yaml into $DAGSTER_HOME
 COPY ./dag/dagster.yaml $DAGSTER_HOME
+COPY ./dag/workspace.yaml $DAGSTER_HOME
 
 EXPOSE 3000
