@@ -26,7 +26,7 @@ services:
     environment:
       - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}
     volumes:
-      - data_volume:/qdrant/data  # Qdrant data in subdirectory
+      - data_volume_frontend:/qdrant/data  # Qdrant data in subdirectory
 
 volumes:
-  data_volume:  # Single named volume
+  data_volume_frontend:  # Single named volume
