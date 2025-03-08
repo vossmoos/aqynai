@@ -28,6 +28,8 @@ services:
     ports:
       - "6333:6333"
       - "6334:6334"
+    environment:
+      - QDRANT__SERVICE__API_KEY=f47ac10b-58cc-4372-a567-0e02b2c3d479
     volumes:
       - data_volume:/qdrant/data  # Qdrant data in subdirectory
 
