@@ -11,8 +11,6 @@ services:
       - data_volume:/app/data/langflow  # Langflow data in subdirectory
     depends_on:
       - qdrant
-      - dagster-webserver
-      - minio
     environment:
       - LANGFLOW_DATABASE_URL=sqlite:///data/langflow/langflow.db # Updated path
       - QDRANT_URL=http://qdrant:6333
