@@ -3,6 +3,13 @@ dagster-webserver
 langchain
 langchain-community
 langchain-qdrant
+langchain-openai
 qdrant-client
 dagster-docker
 dagster-graphql
+minio
+beautifulsoup4
+python-dotenv
+requests
+pydantic
+numpy
