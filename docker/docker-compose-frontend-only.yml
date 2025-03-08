@@ -16,7 +16,7 @@ services:
       - QDRANT_URL=http://qdrant:6333
       - QDRANT_PORT=6333
       - QDRANT_COLLECTION=aqyn
-      - QDRANT__SERVICE__API_KEY=f47ac10b-58cc-4372-a567-0e02b2c3d479
+      - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}
 
   qdrant:
     image: qdrant/qdrant:latest
@@ -24,7 +24,7 @@ services:
       - "6333:6333"
       - "6334:6334"
     environment:
-      - QDRANT__SERVICE__API_KEY=f47ac10b-58cc-4372-a567-0e02b2c3d479
+      - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}
     volumes:
       - data_volume:/qdrant/data  # Qdrant data in subdirectory
 
