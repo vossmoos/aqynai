@@ -8,7 +8,7 @@ services:
     ports:
       - "7860:7860"
     volumes:
-      - data_volume:/app/data/langflow  # Langflow data in subdirectory
+      - data_volume_frontend:/app/data/langflow  # Langflow data in subdirectory
     depends_on:
       - qdrant
     environment:
