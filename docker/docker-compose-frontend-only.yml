@@ -5,8 +5,8 @@ services:
     user: root
     image: langflowai/langflow:latest
     pull_policy: always
-    expose:
-      - "7860"  # Expose port 7860 internally (not mapped to host)
+    ports:
+      - "127.0.0.1:7860:7860"
     volumes:
       - data_volume_frontend:/app/data/langflow
     depends_on:
