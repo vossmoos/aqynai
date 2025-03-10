@@ -6,7 +6,7 @@ services:
     image: langflowai/langflow:latest
     pull_policy: always
     ports:
-      - "127.0.0.1:7860:7860"
+      - "7860:7860"
     volumes:
       - data_volume_frontend:/app/data/langflow
     depends_on:
