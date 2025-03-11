@@ -13,6 +13,10 @@ services:
       - qdrant
     environment:
       - LANGFLOW_DATABASE_URL=sqlite:///data/langflow/langflow.db
+      - LANGFLOW_AUTO_LOGIN=False 
+      - LANGFLOW_SUPERUSER_USERNAME=${LANGFLOW_SUPERUSER_USERNAME}
+      - LANGFLOW_SUPERUSER_PASSWORD=${LANGFLOW_SUPERUSER_PASSWORD}
+      - LANGFLOW_SECRET_KEY=${LANGFLOW_SECRET_KEY}
       - QDRANT_URL=http://qdrant:6333
       - QDRANT_PORT=6333
       - QDRANT_COLLECTION=aqyn
