@@ -3,313 +3,6 @@
   "data": {
     "nodes": [
       {
-        "id": "ChatInput-jKPYh",
-        "type": "genericNode",
-        "position": {
-          "x": 90,
-          "y": 60
-        },
-        "data": {
-          "node": {
-            "template": {
-              "_type": "Component",
-              "files": {
-                "trace_as_metadata": true,
-                "file_path": "",
-                "fileTypes": [
-                  "txt",
-                  "md",
-                  "mdx",
-                  "csv",
-                  "json",
-                  "yaml",
-                  "yml",
-                  "xml",
-                  "html",
-                  "htm",
-                  "pdf",
-                  "docx",
-                  "py",
-                  "sh",
-                  "sql",
-                  "js",
-                  "ts",
-                  "tsx",
-                  "jpg",
-                  "jpeg",
-                  "png",
-                  "bmp",
-                  "image"
-                ],
-                "list": true,
-                "list_add_label": "Add More",
-                "required": false,
-                "placeholder": "",
-                "show": true,
-                "name": "files",
-                "value": "",
-                "display_name": "Files",
-                "advanced": true,
-                "dynamic": false,
-                "info": "Files to be sent with the message.",
-                "title_case": false,
-                "type": "file",
-                "_input_type": "FileInput"
-              },
-              "background_color": {
-                "tool_mode": false,
-                "trace_as_input": true,
-                "trace_as_metadata": true,
-                "load_from_db": false,
-                "list": false,
-                "list_add_label": "Add More",
-                "required": false,
-                "placeholder": "",
-                "show": true,
-                "name": "background_color",
-                "value": "",
-                "display_name": "Background Color",
-                "advanced": true,
-                "input_types": [
-                  "Message"
-                ],
-                "dynamic": false,
-                "info": "The background color of the icon.",
-                "title_case": false,
-                "type": "str",
-                "_input_type": "MessageTextInput"
-              },
-              "chat_icon": {
-                "tool_mode": false,
-                "trace_as_input": true,
-                "trace_as_metadata": true,
-                "load_from_db": false,
-                "list": false,
-                "list_add_label": "Add More",
-                "required": false,
-                "placeholder": "",
-                "show": true,
-                "name": "chat_icon",
-                "value": "",
-                "display_name": "Icon",
-                "advanced": true,
-                "input_types": [
-                  "Message"
-                ],
-                "dynamic": false,
-                "info": "The icon of the message.",
-                "title_case": false,
-                "type": "str",
-                "_input_type": "MessageTextInput"
-              },
-              "code": {
-                "type": "code",
-                "required": true,
-                "placeholder": "",
-                "list": false,
-                "show": true,
-                "multiline": true,
-                "value": "from langflow.base.data.utils import IMG_FILE_TYPES, TEXT_FILE_TYPES\nfrom langflow.base.io.chat import ChatComponent\nfrom langflow.inputs import BoolInput\nfrom langflow.io import (\n    DropdownInput,\n    FileInput,\n    MessageTextInput,\n    MultilineInput,\n    Output,\n)\nfrom langflow.schema.message import Message\nfrom langflow.utils.constants import (\n    MESSAGE_SENDER_AI,\n    MESSAGE_SENDER_NAME_USER,\n    MESSAGE_SENDER_USER,\n)\n\n\nclass ChatInput(ChatComponent):\n    display_name = \"Chat Input\"\n    description = \"Get chat inputs from the Playground.\"\n    icon = \"MessagesSquare\"\n    name = \"ChatInput\"\n    minimized = True\n\n    inputs = [\n        MultilineInput(\n            name=\"input_value\",\n            display_name=\"Text\",\n            value=\"\",\n            info=\"Message to be passed as input.\",\n            input_types=[],\n        ),\n        BoolInput(\n            name=\"should_store_message\",\n            display_name=\"Store Messages\",\n            info=\"Store the message in the history.\",\n            value=True,\n            advanced=True,\n        ),\n        DropdownInput(\n            name=\"sender\",\n            display_name=\"Sender Type\",\n            options=[MESSAGE_SENDER_AI, MESSAGE_SENDER_USER],\n            value=MESSAGE_SENDER_USER,\n            info=\"Type of sender.\",\n            advanced=True,\n        ),\n        MessageTextInput(\n            name=\"sender_name\",\n            display_name=\"Sender Name\",\n            info=\"Name of the sender.\",\n            value=MESSAGE_SENDER_NAME_USER,\n            advanced=True,\n        ),\n        MessageTextInput(\n            name=\"session_id\",\n            display_name=\"Session ID\",\n            info=\"The session ID of the chat. If empty, the current session ID parameter will be used.\",\n            advanced=True,\n        ),\n        FileInput(\n            name=\"files\",\n            display_name=\"Files\",\n            file_types=TEXT_FILE_TYPES + IMG_FILE_TYPES,\n            info=\"Files to be sent with the message.\",\n            advanced=True,\n            is_list=True,\n        ),\n        MessageTextInput(\n            name=\"background_color\",\n            display_name=\"Background Color\",\n            info=\"The background color of the icon.\",\n            advanced=True,\n        ),\n        MessageTextInput(\n            name=\"chat_icon\",\n            display_name=\"Icon\",\n            info=\"The icon of the message.\",\n            advanced=True,\n        ),\n        MessageTextInput(\n            name=\"text_color\",\n            display_name=\"Text Color\",\n            info=\"The text color of the name\",\n            advanced=True,\n        ),\n    ]\n    outputs = [\n        Output(display_name=\"Message\", name=\"message\", method=\"message_response\"),\n    ]\n\n    async def message_response(self) -> Message:\n        background_color = self.background_color\n        text_color = self.text_color\n        icon = self.chat_icon\n\n        message = await Message.create(\n            text=self.input_value,\n            sender=self.sender,\n            sender_name=self.sender_name,\n            session_id=self.session_id,\n            files=self.files,\n            properties={\n                \"background_color\": background_color,\n                \"text_color\": text_color,\n                \"icon\": icon,\n            },\n        )\n        if self.session_id and isinstance(message, Message) and self.should_store_message:\n            stored_message = await self.send_message(\n                message,\n            )\n            self.message.value = stored_message\n            message = stored_message\n\n        self.status = message\n        return message\n",
-                "fileTypes": [],
-                "file_path": "",
-                "password": false,
-                "name": "code",
-                "advanced": true,
-                "dynamic": true,
-                "info": "",
-                "load_from_db": false,
-                "title_case": false
-              },
-              "input_value": {
-                "tool_mode": false,
-                "trace_as_input": true,
-                "multiline": true,
-                "trace_as_metadata": true,
-                "load_from_db": false,
-                "list": false,
-                "list_add_label": "Add More",
-                "required": false,
-                "placeholder": "",
-                "show": true,
-                "name": "input_value",
-                "value": "",
-                "display_name": "Text",
-                "advanced": false,
-                "input_types": [],
-                "dynamic": false,
-                "info": "Message to be passed as input.",
-                "title_case": false,
-                "type": "str",
-                "_input_type": "MultilineInput"
-              },
-              "sender": {
-                "tool_mode": false,
-                "trace_as_metadata": true,
-                "options": [
-                  "Machine",
-                  "User"
-                ],
-                "options_metadata": [],
-                "combobox": false,
-                "dialog_inputs": {},
-                "required": false,
-                "placeholder": "",
-                "show": true,
-                "name": "sender",
-                "value": "User",
-                "display_name": "Sender Type",
-                "advanced": true,
-                "dynamic": false,
-                "info": "Type of sender.",
-                "title_case": false,
-                "type": "str",
-                "_input_type": "DropdownInput"
-              },
-              "sender_name": {
-                "tool_mode": false,
-                "trace_as_input": true,
-                "trace_as_metadata": true,
-                "load_from_db": false,
-                "list": false,
-                "list_add_label": "Add More",
-                "required": false,
-                "placeholder": "",
-                "show": true,
-                "name": "sender_name",
-                "value": "User",
-                "display_name": "Sender Name",
-                "advanced": true,
-                "input_types": [
-                  "Message"
-                ],
-                "dynamic": false,
-                "info": "Name of the sender.",
-                "title_case": false,
-                "type": "str",
-                "_input_type": "MessageTextInput"
-              },
-              "session_id": {
-                "tool_mode": false,
-                "trace_as_input": true,
-                "trace_as_metadata": true,
-                "load_from_db": false,
-                "list": false,
-                "list_add_label": "Add More",
-                "required": false,
-                "placeholder": "",
-                "show": true,
-                "name": "session_id",
-                "value": "",
-                "display_name": "Session ID",
-                "advanced": true,
-                "input_types": [
-                  "Message"
-                ],
-                "dynamic": false,
-                "info": "The session ID of the chat. If empty, the current session ID parameter will be used.",
-                "title_case": false,
-                "type": "str",
-                "_input_type": "MessageTextInput"
-              },
-              "should_store_message": {
-                "tool_mode": false,
-                "trace_as_metadata": true,
-                "list": false,
-                "list_add_label": "Add More",
-                "required": false,
-                "placeholder": "",
-                "show": true,
-                "name": "should_store_message",
-                "value": true,
-                "display_name": "Store Messages",
-                "advanced": true,
-                "dynamic": false,
-                "info": "Store the message in the history.",
-                "title_case": false,
-                "type": "bool",
-                "_input_type": "BoolInput"
-              },
-              "text_color": {
-                "tool_mode": false,
-                "trace_as_input": true,
-                "trace_as_metadata": true,
-                "load_from_db": false,
-                "list": false,
-                "list_add_label": "Add More",
-                "required": false,
-                "placeholder": "",
-                "show": true,
-                "name": "text_color",
-                "value": "",
-                "display_name": "Text Color",
-                "advanced": true,
-                "input_types": [
-                  "Message"
-                ],
-                "dynamic": false,
-                "info": "The text color of the name",
-                "title_case": false,
-                "type": "str",
-                "_input_type": "MessageTextInput"
-              }
-            },
-            "description": "Get chat inputs from the Playground.",
-            "icon": "MessagesSquare",
-            "base_classes": [
-              "Message"
-            ],
-            "display_name": "Chat Input",
-            "documentation": "",
-            "minimized": true,
-            "custom_fields": {},
-            "output_types": [],
-            "pinned": false,
-            "conditional_paths": [],
-            "frozen": false,
-            "outputs": [
-              {
-                "types": [
-                  "Message"
-                ],
-                "selected": "Message",
-                "name": "message",
-                "display_name": "Message",
-                "method": "message_response",
-                "value": "__UNDEFINED__",
-                "cache": true,
-                "allows_loop": false,
-                "tool_mode": true
-              }
-            ],
-            "field_order": [
-              "input_value",
-              "should_store_message",
-              "sender",
-              "sender_name",
-              "session_id",
-              "files",
-              "background_color",
-              "chat_icon",
-              "text_color"
-            ],
-            "beta": false,
-            "legacy": false,
-            "edited": false,
-            "metadata": {},
-            "tool_mode": false,
-            "lf_version": "1.2.0"
-          },
-          "showNode": false,
-          "type": "ChatInput",
-          "id": "ChatInput-jKPYh"
-        },
-        "selected": false,
-        "measured": {
-          "width": 192,
-          "height": 66
-        }
-      },
-      {
         "id": "OpenAIEmbeddings-Zv16Z",
         "type": "genericNode",
         "position": {
@@ -915,7 +608,7 @@
                 "list": false,
                 "show": true,
                 "multiline": true,
-                "value": "from langchain.embeddings.base import Embeddings\nfrom langchain_community.vectorstores import Qdrant\n\nfrom langflow.base.vectorstores.model import LCVectorStoreComponent, check_cached_vector_store\nfrom langflow.helpers.data import docs_to_data\nfrom langflow.io import (\n    DropdownInput,\n    HandleInput,\n    IntInput,\n    SecretStrInput,\n    StrInput,\n)\nfrom langflow.schema import Data\n\n\nclass QdrantVectorStoreComponent(LCVectorStoreComponent):\n    display_name = \"Qdrant\"\n    description = \"Qdrant Vector Store with search capabilities\"\n    icon = \"Qdrant\"\n\n    inputs = [\n        StrInput(name=\"collection_name\", display_name=\"Collection Name\", required=True),\n        StrInput(name=\"host\", display_name=\"Host\", value=\"localhost\", advanced=True),\n        IntInput(name=\"port\", display_name=\"Port\", value=6333, advanced=True),\n        IntInput(name=\"grpc_port\", display_name=\"gRPC Port\", value=6334, advanced=True),\n        SecretStrInput(name=\"api_key\", display_name=\"API Key\", advanced=True),\n        StrInput(name=\"prefix\", display_name=\"Prefix\", advanced=True),\n        IntInput(name=\"timeout\", display_name=\"Timeout\", advanced=True),\n        StrInput(name=\"path\", display_name=\"Path\", advanced=True),\n        StrInput(name=\"url\", display_name=\"URL\", advanced=True),\n        DropdownInput(\n            name=\"distance_func\",\n            display_name=\"Distance Function\",\n            options=[\"Cosine\", \"Euclidean\", \"Dot Product\"],\n            value=\"Cosine\",\n            advanced=True,\n        ),\n        StrInput(name=\"content_payload_key\", display_name=\"Content Payload Key\", value=\"page_content\", advanced=True),\n        StrInput(name=\"metadata_payload_key\", display_name=\"Metadata Payload Key\", value=\"metadata\", advanced=True),\n        *LCVectorStoreComponent.inputs,\n        HandleInput(name=\"embedding\", display_name=\"Embedding\", input_types=[\"Embeddings\"]),\n        IntInput(\n            name=\"number_of_results\",\n            display_name=\"Number of Results\",\n            info=\"Number of results to return.\",\n            value=4,\n            advanced=True,\n        ),\n    ]\n\n    @check_cached_vector_store\n    def build_vector_store(self) -> Qdrant:\n        qdrant_kwargs = {\n            \"collection_name\": self.collection_name,\n            \"content_payload_key\": self.content_payload_key,\n            \"metadata_payload_key\": self.metadata_payload_key,\n        }\n\n        server_kwargs = {\n            \"host\": self.host or None,\n            \"port\": int(self.port),  # Ensure port is an integer\n            \"grpc_port\": int(self.grpc_port),  # Ensure grpc_port is an integer\n            \"api_key\": self.api_key,\n            \"prefix\": self.prefix,\n            # Ensure timeout is an integer\n            \"timeout\": int(self.timeout) if self.timeout else None,\n            \"path\": self.path or None,\n            \"url\": self.url or None,\n        }\n\n        server_kwargs = {k: v for k, v in server_kwargs.items() if v is not None}\n        documents = []\n\n        for _input in self.ingest_data or []:\n            if isinstance(_input, Data):\n                documents.append(_input.to_lc_document())\n            else:\n                documents.append(_input)\n\n        if not isinstance(self.embedding, Embeddings):\n            msg = \"Invalid embedding object\"\n            raise TypeError(msg)\n\n        if documents:\n            qdrant = Qdrant.from_documents(documents, embedding=self.embedding, **qdrant_kwargs, **server_kwargs)\n        else:\n            from qdrant_client import QdrantClient\n\n            client = QdrantClient(**server_kwargs)\n            qdrant = Qdrant(embeddings=self.embedding, client=client, **qdrant_kwargs)\n\n        return qdrant\n\n    def search_documents(self) -> list[Data]:\n        vector_store = self.build_vector_store()\n\n        if self.search_query and isinstance(self.search_query, str) and self.search_query.strip():\n            docs = vector_store.similarity_search(\n                query=self.search_query,\n                k=self.number_of_results,\n            )\n\n            data = docs_to_data(docs)\n            self.status = data\n            return data\n        return []\n",
+                "value": "from langchain.embeddings.base import Embeddings\nfrom langchain_community.vectorstores import Qdrant\n\nfrom langflow.base.vectorstores.model import LCVectorStoreComponent, check_cached_vector_store\nfrom langflow.helpers.data import docs_to_data\nfrom langflow.io import (\n    DropdownInput,\n    HandleInput,\n    IntInput,\n    SecretStrInput,\n    StrInput,\n)\nfrom langflow.schema import Data\n\n\nclass QdrantVectorStoreComponent(LCVectorStoreComponent):\n    display_name = \"Qdrant\"\n    description = \"Qdrant Vector Store with search capabilities\"\n    icon = \"Qdrant\"\n\n    inputs = [\n        StrInput(name=\"collection_name\", display_name=\"Collection Name\", required=True),\n        StrInput(name=\"host\", display_name=\"Host\", value=\"localhost\", advanced=True),\n        IntInput(name=\"port\", display_name=\"Port\", value=6333, advanced=True),\n        IntInput(name=\"grpc_port\", display_name=\"gRPC Port\", value=6334, advanced=True),\n        SecretStrInput(name=\"api_key\", display_name=\"API Key\", advanced=True),\n        StrInput(name=\"prefix\", display_name=\"Prefix\", advanced=True),\n        IntInput(name=\"timeout\", display_name=\"Timeout\", advanced=True),\n        StrInput(name=\"path\", display_name=\"Path\", advanced=True),\n        StrInput(name=\"url\", display_name=\"URL\", advanced=True),\n        DropdownInput(\n            name=\"distance_func\",\n            display_name=\"Distance Function\",\n            options=[\"Cosine\", \"Euclidean\", \"Dot Product\"],\n            value=\"Cosine\",\n            advanced=True,\n        ),\n        StrInput(name=\"content_payload_key\", display_name=\"Content Payload Key\", value=\"page_content\", advanced=True),\n        StrInput(name=\"metadata_payload_key\", display_name=\"Metadata Payload Key\", value=\"metadata\", advanced=True),\n        *LCVectorStoreComponent.inputs,\n        HandleInput(name=\"embedding\", display_name=\"Embedding\", input_types=[\"Embeddings\"]),\n        IntInput(\n            name=\"number_of_results\",\n            display_name=\"Number of Results\",\n            info=\"Number of results to return.\",\n            value=4,\n            advanced=True,\n        ),\n    ]\n\n    @check_cached_vector_store\n    def build_vector_store(self) -> Qdrant:\n        qdrant_kwargs = {\n            \"collection_name\": self.collection_name,\n            \"content_payload_key\": self.content_payload_key,\n            \"metadata_payload_key\": self.metadata_payload_key,\n        }\n\n        server_kwargs = {\n            \"host\": self.host or None,\n            \"port\": int(self.port),  # Ensure port is an integer\n            \"grpc_port\": int(self.grpc_port),  # Ensure grpc_port is an integer\n            \"api_key\": self.api_key,\n            \"prefix\": self.prefix,\n            # Ensure timeout is an integer\n            \"timeout\": int(self.timeout) if self.timeout else None,\n            \"path\": self.path or None,\n            \"url\": self.url or None,\n            \"https\":False,\n        }\n\n        server_kwargs = {k: v for k, v in server_kwargs.items() if v is not None}\n        documents = []\n\n        for _input in self.ingest_data or []:\n            if isinstance(_input, Data):\n                documents.append(_input.to_lc_document())\n            else:\n                documents.append(_input)\n\n        if not isinstance(self.embedding, Embeddings):\n            msg = \"Invalid embedding object\"\n            raise TypeError(msg)\n\n        if documents:\n            qdrant = Qdrant.from_documents(documents, embedding=self.embedding, **qdrant_kwargs, **server_kwargs)\n        else:\n            from qdrant_client import QdrantClient\n\n            client = QdrantClient(**server_kwargs)\n            qdrant = Qdrant(embeddings=self.embedding, client=client, **qdrant_kwargs)\n\n        return qdrant\n\n    def search_documents(self) -> list[Data]:\n        vector_store = self.build_vector_store()\n\n        if self.search_query and isinstance(self.search_query, str) and self.search_query.strip():\n            docs = vector_store.similarity_search(\n                query=self.search_query,\n                k=self.number_of_results,\n            )\n\n            data = docs_to_data(docs)\n            self.status = data\n            return data\n        return []\n",
                 "fileTypes": [],
                 "file_path": "",
                 "password": false,
@@ -936,7 +629,7 @@
                 "placeholder": "",
                 "show": true,
                 "name": "collection_name",
-                "value": "default",
+                "value": "aqyn",
                 "display_name": "Collection Name",
                 "advanced": false,
                 "dynamic": false,
@@ -955,7 +648,7 @@
                 "placeholder": "",
                 "show": true,
                 "name": "content_payload_key",
-                "value": "page_content",
+                "value": "raw_text",
                 "display_name": "Content Payload Key",
                 "advanced": true,
                 "dynamic": false,
@@ -1016,7 +709,7 @@
                 "placeholder": "",
                 "show": true,
                 "name": "host",
-                "value": "localhost",
+                "value": "rag.aqyn.tech",
                 "display_name": "Host",
                 "advanced": true,
                 "dynamic": false,
@@ -1035,7 +728,7 @@
                 "placeholder": "",
                 "show": true,
                 "name": "metadata_payload_key",
-                "value": "metadata",
+                "value": "",
                 "display_name": "Metadata Payload Key",
                 "advanced": true,
                 "dynamic": false,
@@ -1219,6 +912,7 @@
                 ],
                 "selected": "Data",
                 "name": "search_results",
+                "hidden": null,
                 "display_name": "Search Results",
                 "method": "search_documents",
                 "value": "__UNDEFINED__",
@@ -1235,6 +929,7 @@
                 ],
                 "selected": "DataFrame",
                 "name": "dataframe",
+                "hidden": null,
                 "display_name": "DataFrame",
                 "method": "as_dataframe",
                 "value": "__UNDEFINED__",
@@ -1265,7 +960,7 @@
             ],
             "beta": false,
             "legacy": false,
-            "edited": false,
+            "edited": true,
             "metadata": {},
             "tool_mode": false,
             "lf_version": "1.2.0"
@@ -1687,7 +1382,7 @@
                 "placeholder": "",
                 "show": true,
                 "name": "system_message",
-                "value": "Answer as a technical knowledge base specialist",
+                "value": "Answer as a technical knowledge base specialist based ONLY on the context data",
                 "display_name": "System Message",
                 "advanced": false,
                 "input_types": [
@@ -1818,7 +1513,7 @@
           "type": "OpenAIModel",
           "id": "OpenAIModel-YykcL"
         },
-        "selected": false,
+        "selected": true,
         "measured": {
           "width": 320,
           "height": 656
@@ -1912,7 +1607,7 @@
                 "title_case": false,
                 "trace_as_input": true,
                 "type": "prompt",
-                "value": "{context}\n\n---\n\nGiven the context above, answer the question as best as possible.\n\nQuestion: {question}\n\nAnswer: "
+                "value": "{context}\n\n---\n\nGiven the context above, answer the question as best as possible. Answer based ONLY on the context data.\n\nQuestion: {question}\n\nAnswer: "
               },
               "tool_placeholder": {
                 "_input_type": "MessageTextInput",
@@ -2292,13 +1987,321 @@
             "legacy": false,
             "edited": false,
             "metadata": {},
-            "tool_mode": false
+            "tool_mode": false,
+            "lf_version": "1.2.0"
           },
           "showNode": false,
           "type": "ChatOutput",
           "id": "ChatOutput-XyiQD"
         },
-        "selected": true,
+        "selected": false,
+        "measured": {
+          "width": 192,
+          "height": 66
+        }
+      },
+      {
+        "id": "ChatInput-DXe0c",
+        "type": "genericNode",
+        "position": {
+          "x": 75,
+          "y": -30
+        },
+        "data": {
+          "node": {
+            "template": {
+              "_type": "Component",
+              "files": {
+                "trace_as_metadata": true,
+                "file_path": "",
+                "fileTypes": [
+                  "txt",
+                  "md",
+                  "mdx",
+                  "csv",
+                  "json",
+                  "yaml",
+                  "yml",
+                  "xml",
+                  "html",
+                  "htm",
+                  "pdf",
+                  "docx",
+                  "py",
+                  "sh",
+                  "sql",
+                  "js",
+                  "ts",
+                  "tsx",
+                  "jpg",
+                  "jpeg",
+                  "png",
+                  "bmp",
+                  "image"
+                ],
+                "list": true,
+                "list_add_label": "Add More",
+                "required": false,
+                "placeholder": "",
+                "show": true,
+                "name": "files",
+                "value": "",
+                "display_name": "Files",
+                "advanced": true,
+                "dynamic": false,
+                "info": "Files to be sent with the message.",
+                "title_case": false,
+                "type": "file",
+                "_input_type": "FileInput"
+              },
+              "background_color": {
+                "tool_mode": false,
+                "trace_as_input": true,
+                "trace_as_metadata": true,
+                "load_from_db": false,
+                "list": false,
+                "list_add_label": "Add More",
+                "required": false,
+                "placeholder": "",
+                "show": true,
+                "name": "background_color",
+                "value": "",
+                "display_name": "Background Color",
+                "advanced": true,
+                "input_types": [
+                  "Message"
+                ],
+                "dynamic": false,
+                "info": "The background color of the icon.",
+                "title_case": false,
+                "type": "str",
+                "_input_type": "MessageTextInput"
+              },
+              "chat_icon": {
+                "tool_mode": false,
+                "trace_as_input": true,
+                "trace_as_metadata": true,
+                "load_from_db": false,
+                "list": false,
+                "list_add_label": "Add More",
+                "required": false,
+                "placeholder": "",
+                "show": true,
+                "name": "chat_icon",
+                "value": "",
+                "display_name": "Icon",
+                "advanced": true,
+                "input_types": [
+                  "Message"
+                ],
+                "dynamic": false,
+                "info": "The icon of the message.",
+                "title_case": false,
+                "type": "str",
+                "_input_type": "MessageTextInput"
+              },
+              "code": {
+                "type": "code",
+                "required": true,
+                "placeholder": "",
+                "list": false,
+                "show": true,
+                "multiline": true,
+                "value": "from langflow.base.data.utils import IMG_FILE_TYPES, TEXT_FILE_TYPES\nfrom langflow.base.io.chat import ChatComponent\nfrom langflow.inputs import BoolInput\nfrom langflow.io import (\n    DropdownInput,\n    FileInput,\n    MessageTextInput,\n    MultilineInput,\n    Output,\n)\nfrom langflow.schema.message import Message\nfrom langflow.utils.constants import (\n    MESSAGE_SENDER_AI,\n    MESSAGE_SENDER_NAME_USER,\n    MESSAGE_SENDER_USER,\n)\n\n\nclass ChatInput(ChatComponent):\n    display_name = \"Chat Input\"\n    description = \"Get chat inputs from the Playground.\"\n    icon = \"MessagesSquare\"\n    name = \"ChatInput\"\n    minimized = True\n\n    inputs = [\n        MultilineInput(\n            name=\"input_value\",\n            display_name=\"Text\",\n            value=\"\",\n            info=\"Message to be passed as input.\",\n            input_types=[],\n        ),\n        BoolInput(\n            name=\"should_store_message\",\n            display_name=\"Store Messages\",\n            info=\"Store the message in the history.\",\n            value=True,\n            advanced=True,\n        ),\n        DropdownInput(\n            name=\"sender\",\n            display_name=\"Sender Type\",\n            options=[MESSAGE_SENDER_AI, MESSAGE_SENDER_USER],\n            value=MESSAGE_SENDER_USER,\n            info=\"Type of sender.\",\n            advanced=True,\n        ),\n        MessageTextInput(\n            name=\"sender_name\",\n            display_name=\"Sender Name\",\n            info=\"Name of the sender.\",\n            value=MESSAGE_SENDER_NAME_USER,\n            advanced=True,\n        ),\n        MessageTextInput(\n            name=\"session_id\",\n            display_name=\"Session ID\",\n            info=\"The session ID of the chat. If empty, the current session ID parameter will be used.\",\n            advanced=True,\n        ),\n        FileInput(\n            name=\"files\",\n            display_name=\"Files\",\n            file_types=TEXT_FILE_TYPES + IMG_FILE_TYPES,\n            info=\"Files to be sent with the message.\",\n            advanced=True,\n            is_list=True,\n        ),\n        MessageTextInput(\n            name=\"background_color\",\n            display_name=\"Background Color\",\n            info=\"The background color of the icon.\",\n            advanced=True,\n        ),\n        MessageTextInput(\n            name=\"chat_icon\",\n            display_name=\"Icon\",\n            info=\"The icon of the message.\",\n            advanced=True,\n        ),\n        MessageTextInput(\n            name=\"text_color\",\n            display_name=\"Text Color\",\n            info=\"The text color of the name\",\n            advanced=True,\n        ),\n    ]\n    outputs = [\n        Output(display_name=\"Message\", name=\"message\", method=\"message_response\"),\n    ]\n\n    async def message_response(self) -> Message:\n        background_color = self.background_color\n        text_color = self.text_color\n        icon = self.chat_icon\n\n        message = await Message.create(\n            text=self.input_value,\n            sender=self.sender,\n            sender_name=self.sender_name,\n            session_id=self.session_id,\n            files=self.files,\n            properties={\n                \"background_color\": background_color,\n                \"text_color\": text_color,\n                \"icon\": icon,\n            },\n        )\n        if self.session_id and isinstance(message, Message) and self.should_store_message:\n            stored_message = await self.send_message(\n                message,\n            )\n            self.message.value = stored_message\n            message = stored_message\n\n        self.status = message\n        return message\n",
+                "fileTypes": [],
+                "file_path": "",
+                "password": false,
+                "name": "code",
+                "advanced": true,
+                "dynamic": true,
+                "info": "",
+                "load_from_db": false,
+                "title_case": false
+              },
+              "input_value": {
+                "tool_mode": false,
+                "trace_as_input": true,
+                "multiline": true,
+                "trace_as_metadata": true,
+                "load_from_db": false,
+                "list": false,
+                "list_add_label": "Add More",
+                "required": false,
+                "placeholder": "",
+                "show": true,
+                "name": "input_value",
+                "value": "",
+                "display_name": "Text",
+                "advanced": false,
+                "input_types": [],
+                "dynamic": false,
+                "info": "Message to be passed as input.",
+                "title_case": false,
+                "type": "str",
+                "_input_type": "MultilineInput"
+              },
+              "sender": {
+                "tool_mode": false,
+                "trace_as_metadata": true,
+                "options": [
+                  "Machine",
+                  "User"
+                ],
+                "options_metadata": [],
+                "combobox": false,
+                "dialog_inputs": {},
+                "required": false,
+                "placeholder": "",
+                "show": true,
+                "name": "sender",
+                "value": "User",
+                "display_name": "Sender Type",
+                "advanced": true,
+                "dynamic": false,
+                "info": "Type of sender.",
+                "title_case": false,
+                "type": "str",
+                "_input_type": "DropdownInput"
+              },
+              "sender_name": {
+                "tool_mode": false,
+                "trace_as_input": true,
+                "trace_as_metadata": true,
+                "load_from_db": false,
+                "list": false,
+                "list_add_label": "Add More",
+                "required": false,
+                "placeholder": "",
+                "show": true,
+                "name": "sender_name",
+                "value": "User",
+                "display_name": "Sender Name",
+                "advanced": true,
+                "input_types": [
+                  "Message"
+                ],
+                "dynamic": false,
+                "info": "Name of the sender.",
+                "title_case": false,
+                "type": "str",
+                "_input_type": "MessageTextInput"
+              },
+              "session_id": {
+                "tool_mode": false,
+                "trace_as_input": true,
+                "trace_as_metadata": true,
+                "load_from_db": false,
+                "list": false,
+                "list_add_label": "Add More",
+                "required": false,
+                "placeholder": "",
+                "show": true,
+                "name": "session_id",
+                "value": "",
+                "display_name": "Session ID",
+                "advanced": true,
+                "input_types": [
+                  "Message"
+                ],
+                "dynamic": false,
+                "info": "The session ID of the chat. If empty, the current session ID parameter will be used.",
+                "title_case": false,
+                "type": "str",
+                "_input_type": "MessageTextInput"
+              },
+              "should_store_message": {
+                "tool_mode": false,
+                "trace_as_metadata": true,
+                "list": false,
+                "list_add_label": "Add More",
+                "required": false,
+                "placeholder": "",
+                "show": true,
+                "name": "should_store_message",
+                "value": true,
+                "display_name": "Store Messages",
+                "advanced": true,
+                "dynamic": false,
+                "info": "Store the message in the history.",
+                "title_case": false,
+                "type": "bool",
+                "_input_type": "BoolInput"
+              },
+              "text_color": {
+                "tool_mode": false,
+                "trace_as_input": true,
+                "trace_as_metadata": true,
+                "load_from_db": false,
+                "list": false,
+                "list_add_label": "Add More",
+                "required": false,
+                "placeholder": "",
+                "show": true,
+                "name": "text_color",
+                "value": "",
+                "display_name": "Text Color",
+                "advanced": true,
+                "input_types": [
+                  "Message"
+                ],
+                "dynamic": false,
+                "info": "The text color of the name",
+                "title_case": false,
+                "type": "str",
+                "_input_type": "MessageTextInput"
+              }
+            },
+            "description": "Get chat inputs from the Playground.",
+            "icon": "MessagesSquare",
+            "base_classes": [
+              "Message"
+            ],
+            "display_name": "Chat Input",
+            "documentation": "",
+            "minimized": true,
+            "custom_fields": {},
+            "output_types": [],
+            "pinned": false,
+            "conditional_paths": [],
+            "frozen": false,
+            "outputs": [
+              {
+                "types": [
+                  "Message"
+                ],
+                "selected": "Message",
+                "name": "message",
+                "display_name": "Message",
+                "method": "message_response",
+                "value": "__UNDEFINED__",
+                "cache": true,
+                "allows_loop": false,
+                "tool_mode": true
+              }
+            ],
+            "field_order": [
+              "input_value",
+              "should_store_message",
+              "sender",
+              "sender_name",
+              "session_id",
+              "files",
+              "background_color",
+              "chat_icon",
+              "text_color"
+            ],
+            "beta": false,
+            "legacy": false,
+            "edited": false,
+            "metadata": {},
+            "tool_mode": false,
+            "lf_version": "1.2.0"
+          },
+          "showNode": false,
+          "type": "ChatInput",
+          "id": "ChatInput-DXe0c"
+        },
+        "selected": false,
         "measured": {
           "width": 192,
           "height": 66
@@ -2330,33 +2333,6 @@
           }
         },
         "id": "xy-edge__OpenAIEmbeddings-Zv16Z{œdataTypeœ:œOpenAIEmbeddingsœ,œidœ:œOpenAIEmbeddings-Zv16Zœ,œnameœ:œembeddingsœ,œoutput_typesœ:[œEmbeddingsœ]}-QdrantVectorStoreComponent-2sWo4{œfieldNameœ:œembeddingœ,œidœ:œQdrantVectorStoreComponent-2sWo4œ,œinputTypesœ:[œEmbeddingsœ],œtypeœ:œotherœ}",
-        "className": "",
-        "animated": false
-      },
-      {
-        "source": "ChatInput-jKPYh",
-        "sourceHandle": "{œdataTypeœ:œChatInputœ,œidœ:œChatInput-jKPYhœ,œnameœ:œmessageœ,œoutput_typesœ:[œMessageœ]}",
-        "target": "QdrantVectorStoreComponent-2sWo4",
-        "targetHandle": "{œfieldNameœ:œsearch_queryœ,œidœ:œQdrantVectorStoreComponent-2sWo4œ,œinputTypesœ:[œMessageœ],œtypeœ:œstrœ}",
-        "data": {
-          "targetHandle": {
-            "fieldName": "search_query",
-            "id": "QdrantVectorStoreComponent-2sWo4",
-            "inputTypes": [
-              "Message"
-            ],
-            "type": "str"
-          },
-          "sourceHandle": {
-            "dataType": "ChatInput",
-            "id": "ChatInput-jKPYh",
-            "name": "message",
-            "output_types": [
-              "Message"
-            ]
-          }
-        },
-        "id": "xy-edge__ChatInput-jKPYh{œdataTypeœ:œChatInputœ,œidœ:œChatInput-jKPYhœ,œnameœ:œmessageœ,œoutput_typesœ:[œMessageœ]}-QdrantVectorStoreComponent-2sWo4{œfieldNameœ:œsearch_queryœ,œidœ:œQdrantVectorStoreComponent-2sWo4œ,œinputTypesœ:[œMessageœ],œtypeœ:œstrœ}",
         "className": "",
         "animated": false
       },
@@ -2415,33 +2391,6 @@
         "className": ""
       },
       {
-        "source": "ChatInput-jKPYh",
-        "sourceHandle": "{œdataTypeœ:œChatInputœ,œidœ:œChatInput-jKPYhœ,œnameœ:œmessageœ,œoutput_typesœ:[œMessageœ]}",
-        "target": "Prompt (NLaI9)-5Fbbo",
-        "targetHandle": "{œfieldNameœ:œquestionœ,œidœ:œPrompt (NLaI9)-5Fbboœ,œinputTypesœ:[œMessageœ],œtypeœ:œstrœ}",
-        "data": {
-          "targetHandle": {
-            "fieldName": "question",
-            "id": "Prompt (NLaI9)-5Fbbo",
-            "inputTypes": [
-              "Message"
-            ],
-            "type": "str"
-          },
-          "sourceHandle": {
-            "dataType": "ChatInput",
-            "id": "ChatInput-jKPYh",
-            "name": "message",
-            "output_types": [
-              "Message"
-            ]
-          }
-        },
-        "id": "xy-edge__ChatInput-jKPYh{œdataTypeœ:œChatInputœ,œidœ:œChatInput-jKPYhœ,œnameœ:œmessageœ,œoutput_typesœ:[œMessageœ]}-Prompt (NLaI9)-5Fbbo{œfieldNameœ:œquestionœ,œidœ:œPrompt (NLaI9)-5Fbboœ,œinputTypesœ:[œMessageœ],œtypeœ:œstrœ}",
-        "animated": false,
-        "className": ""
-      },
-      {
         "source": "Prompt (NLaI9)-5Fbbo",
         "sourceHandle": "{œdataTypeœ:œPrompt (NLaI9)œ,œidœ:œPrompt (NLaI9)-5Fbboœ,œnameœ:œpromptœ,œoutput_typesœ:[œMessageœ]}",
         "target": "OpenAIModel-YykcL",
@@ -2496,16 +2445,70 @@
         "id": "xy-edge__OpenAIModel-YykcL{œdataTypeœ:œOpenAIModelœ,œidœ:œOpenAIModel-YykcLœ,œnameœ:œtext_outputœ,œoutput_typesœ:[œMessageœ]}-ChatOutput-XyiQD{œfieldNameœ:œinput_valueœ,œidœ:œChatOutput-XyiQDœ,œinputTypesœ:[œDataœ,œDataFrameœ,œMessageœ],œtypeœ:œotherœ}",
         "animated": false,
         "className": ""
+      },
+      {
+        "source": "ChatInput-DXe0c",
+        "sourceHandle": "{œdataTypeœ:œChatInputœ,œidœ:œChatInput-DXe0cœ,œnameœ:œmessageœ,œoutput_typesœ:[œMessageœ]}",
+        "target": "QdrantVectorStoreComponent-2sWo4",
+        "targetHandle": "{œfieldNameœ:œsearch_queryœ,œidœ:œQdrantVectorStoreComponent-2sWo4œ,œinputTypesœ:[œMessageœ],œtypeœ:œstrœ}",
+        "data": {
+          "targetHandle": {
+            "fieldName": "search_query",
+            "id": "QdrantVectorStoreComponent-2sWo4",
+            "inputTypes": [
+              "Message"
+            ],
+            "type": "str"
+          },
+          "sourceHandle": {
+            "dataType": "ChatInput",
+            "id": "ChatInput-DXe0c",
+            "name": "message",
+            "output_types": [
+              "Message"
+            ]
+          }
+        },
+        "id": "xy-edge__ChatInput-DXe0c{œdataTypeœ:œChatInputœ,œidœ:œChatInput-DXe0cœ,œnameœ:œmessageœ,œoutput_typesœ:[œMessageœ]}-QdrantVectorStoreComponent-2sWo4{œfieldNameœ:œsearch_queryœ,œidœ:œQdrantVectorStoreComponent-2sWo4œ,œinputTypesœ:[œMessageœ],œtypeœ:œstrœ}",
+        "animated": false,
+        "className": ""
+      },
+      {
+        "source": "ChatInput-DXe0c",
+        "sourceHandle": "{œdataTypeœ:œChatInputœ,œidœ:œChatInput-DXe0cœ,œnameœ:œmessageœ,œoutput_typesœ:[œMessageœ]}",
+        "target": "Prompt (NLaI9)-5Fbbo",
+        "targetHandle": "{œfieldNameœ:œquestionœ,œidœ:œPrompt (NLaI9)-5Fbboœ,œinputTypesœ:[œMessageœ],œtypeœ:œstrœ}",
+        "data": {
+          "targetHandle": {
+            "fieldName": "question",
+            "id": "Prompt (NLaI9)-5Fbbo",
+            "inputTypes": [
+              "Message"
+            ],
+            "type": "str"
+          },
+          "sourceHandle": {
+            "dataType": "ChatInput",
+            "id": "ChatInput-DXe0c",
+            "name": "message",
+            "output_types": [
+              "Message"
+            ]
+          }
+        },
+        "id": "xy-edge__ChatInput-DXe0c{œdataTypeœ:œChatInputœ,œidœ:œChatInput-DXe0cœ,œnameœ:œmessageœ,œoutput_typesœ:[œMessageœ]}-Prompt (NLaI9)-5Fbbo{œfieldNameœ:œquestionœ,œidœ:œPrompt (NLaI9)-5Fbboœ,œinputTypesœ:[œMessageœ],œtypeœ:œstrœ}",
+        "animated": false,
+        "className": ""
       }
     ],
     "viewport": {
-      "x": 165.80370184716026,
-      "y": 176.42627920158202,
-      "zoom": 0.7087678332696891
+      "x": -1177.4967875812013,
+      "y": 414.6394283591974,
+      "zoom": 0.8925323320046896
     }
   },
   "description": "Building Powerful Solutions with Language Models.",
-  "name": "Aqyn",
+  "name": "Aqyn2",
   "last_tested_version": "1.2.0",
   "endpoint_name": null,
   "is_component": false

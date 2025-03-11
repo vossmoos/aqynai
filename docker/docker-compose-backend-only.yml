@@ -9,12 +9,12 @@ services:
       - "3000:3000"
     environment:
       - PYTHONPATH=/opt/dagster/app
-      - QDRANT_HOST=qdrant
+      - QDRANT_HOST=rag.aqyn.tech
       - QDRANT_PORT=6333
+      - QDRANT_API_KEY=${QDRANT_API_KEY}
       - QDRANT_COLLECTION=aqyn
       - DAGSTER_HOME=/opt/dagster/dagster_home
-    depends_on:
-      - qdrant
+      - OPENAI_API_KEY=${OPENAI_API_KEY} 
     volumes:
       - dagster_home1:/opt/dagster/dagster_home
       - ./dag/dagster.yaml:/opt/dagster/dagster.yaml
@@ -26,10 +26,15 @@ services:
       context: .
       dockerfile: ./dag/Dockerfile
     environment:
+      - QDRANT_HOST=rag.aqyn.tech
+      - QDRANT_PORT=6333
+      - QDRANT_API_KEY=${QDRANT_API_KEY}
+      - QDRANT_COLLECTION=aqyn
       - DAGSTER_HOME=/opt/dagster/dagster_home
+      - OPENAI_API_KEY=${OPENAI_API_KEY} 
     depends_on:
       - dagster-webserver
-    volumes: # Make docker client accessible so we can launch containers using host docker
+    volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /tmp/io_manager_storage:/tmp/io_manager_storage
       - dagster_home1:/opt/dagster/dagster_home
@@ -42,12 +47,12 @@ services:
       - "9000:9000"
       - "9001:9001"
     environment:
-      - MINIO_ROOT_USER=aqyn    # Updated to recommended variable name
-      - MINIO_ROOT_PASSWORD=aqynpassword  # Updated to recommended variable name
-    command: server /data/minio --console-address ":9001"  # Added server command
+      - MINIO_ROOT_USER=aqyn
+      - MINIO_ROOT_PASSWORD=aqynpassword
+    command: server /data/minio --console-address ":9001"
     volumes:
       - data_volume:/data/minio
 
 volumes:
-  data_volume:  # Single named volume
+  data_volume:
   dagster_home1:

@@ -1,26 +1,21 @@
 from dagster import job, op, repository, Field, String, Out, In
 from minio import Minio
 from langchain_openai import OpenAIEmbeddings
-from langchain_community.document_loaders import BSHTMLLoader
+from langchain_core.documents import Document  # Updated import for Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 import os
-from io import BytesIO
-from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
-
-# Default values for environment variables (change these as needed)
-DEFAULT_MINIO_ENDPOINT = "localhost:9000"
-DEFAULT_MINIO_ACCESS_KEY = "minioadmin"
-DEFAULT_MINIO_SECRET_KEY = "minioadmin"
-DEFAULT_MINIO_BUCKET = "html-bucket"
-DEFAULT_QDRANT_HOST = "localhost"
+# Default values aligned with Docker Compose
+DEFAULT_MINIO_ENDPOINT = "minio:9000"
+DEFAULT_MINIO_ACCESS_KEY = "aqyn"
+DEFAULT_MINIO_SECRET_KEY = "aqynpassword"
+DEFAULT_MINIO_BUCKET = "aqyn-bucket"
+DEFAULT_QDRANT_HOST = "rag.aqyn.tech"
 DEFAULT_QDRANT_PORT = 6333
-DEFAULT_QDRANT_COLLECTION = "html_embeddings"
-DEFAULT_OPENAI_API_KEY = "your-openai-api-key-here"  # Replace with a real key or leave as placeholder
+DEFAULT_QDRANT_API_KEY = "e47ac10b-58c0-4372-a567-0e02b2c3d422"
+DEFAULT_QDRANT_COLLECTION = "aqyn"
 
 # Resolve actual values from environment or defaults
 MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", DEFAULT_MINIO_ENDPOINT)
@@ -29,8 +24,9 @@ MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", DEFAULT_MINIO_SECRET_KEY)
 MINIO_BUCKET = os.getenv("MINIO_BUCKET", DEFAULT_MINIO_BUCKET)
 QDRANT_HOST = os.getenv("QDRANT_HOST", DEFAULT_QDRANT_HOST)
 QDRANT_PORT = int(os.getenv("QDRANT_PORT", DEFAULT_QDRANT_PORT))
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", DEFAULT_QDRANT_API_KEY)
 QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", DEFAULT_QDRANT_COLLECTION)
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", DEFAULT_OPENAI_API_KEY)
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Op 1: Fetch HTML files from MinIO and chunk them
 @op(
@@ -43,7 +39,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", DEFAULT_OPENAI_API_KEY)
     out=Out(list, description="List of chunked documents")
 )
 def fetch_and_chunk_html(context):
-    context.log.info("Fetching and chunking HTML files from MinIO...")
+    context.log.info("Fetching and chunking files from MinIO...")
 
     # MinIO client setup
     minio_client = Minio(
@@ -61,118 +57,84 @@ def fetch_and_chunk_html(context):
     else:
         context.log.info(f"Using existing bucket: {bucket_name}")
 
-    # List all HTML files in the bucket
+    # List all objects in the bucket
     objects = minio_client.list_objects(bucket_name, recursive=True)
-    html_files = [obj for obj in objects if obj.object_name.endswith(".html")]
-
-    if not html_files:
-        context.log.warning("No HTML files found in the bucket!")
+    if not objects:
+        context.log.warning("No files found in the bucket!")
         return []
 
     # Text splitter for chunking
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
 
-    # Process each HTML file
+    # Process each file
     documents = []
-    for obj in html_files:
+    for obj in objects:
         context.log.info(f"Processing file: {obj.object_name}")
         
-        # Get the HTML content from MinIO
+        # Get the file content from MinIO
         response = minio_client.get_object(bucket_name, obj.object_name)
-        html_content = response.read().decode("utf-8")
+        file_content = response.read()
         response.close()
 
-        # Parse HTML content with BeautifulSoup via LangChain loader
-        buffer = BytesIO(html_content.encode("utf-8"))
-        loader = BSHTMLLoader(buffer)
-        doc = loader.load()[0]  # Get the first document
-
-        # Split the document into chunks
-        chunks = text_splitter.split_documents([doc])
-        documents.extend(chunks)
+        # Assume HTML content
+        try:
+            html_content = file_content.decode("utf-8")
+            # Create a Document object directly from the string
+            doc = Document(page_content=html_content, metadata={"source": obj.object_name})
+            chunks = text_splitter.split_documents([doc])
+            documents.extend(chunks)
+        except Exception as e:
+            context.log.warning(f"Failed to process {obj.object_name} as HTML: {e}")
+            continue
 
     context.log.info(f"Chunked {len(documents)} document chunks")
     return documents
 
-# Op 2: Set up Qdrant collection if it doesn't exist
+# Op 2: Generate embeddings and store in Qdrant
 @op(
+    ins={"documents": In(list, description="List of chunked documents")},
     config_schema={
         "qdrant_host": Field(String, default_value=QDRANT_HOST),
         "qdrant_port": Field(int, default_value=QDRANT_PORT),
+        "qdrant_api_key": Field(String, default_value=QDRANT_API_KEY),
         "qdrant_collection": Field(String, default_value=QDRANT_COLLECTION),
     }
 )
-def setup_qdrant_collection(context):
-    context.log.info("Setting up Qdrant collection...")
-
-    # Qdrant client setup
-    qdrant_client = QdrantClient(
-        host=context.op_config["qdrant_host"],
-        port=context.op_config["qdrant_port"]
-    )
-
-    # Embedding size for text-embedding-3-large is 3072
-    embedding_size = 3072
-    collection_name = context.op_config["qdrant_collection"]
-
-    # Check if collection exists
-    collections = qdrant_client.get_collections().collections
-    collection_exists = any(col.name == collection_name for col in collections)
-
-    if not collection_exists:
-        context.log.info(f"Creating new collection: {collection_name}")
-        qdrant_client.create_collection(
-            collection_name=collection_name,
-            vectors_config=models.VectorParams(
-                size=embedding_size,
-                distance=models.Distance.COSINE
-            )
-        )
-    else:
-        context.log.info(f"Collection {collection_name} already exists")
-
-    return collection_name
-
-# Op 3: Generate embeddings and store in Qdrant
-@op(
-    ins={"documents": In(list, description="List of chunked documents"), "collection_name": In(str, description="Qdrant collection name")},
-    config_schema={
-        "qdrant_host": Field(String, default_value=QDRANT_HOST),
-        "qdrant_port": Field(int, default_value=QDRANT_PORT),
-    }
-)
-def embed_and_store(context, documents, collection_name):
+def embed_and_store(context, documents):
     context.log.info("Generating embeddings and storing in Qdrant...")
 
     if not documents:
         context.log.warning("No documents to embed!")
         return
 
-    # Initialize OpenAI embeddings (API key from resolved variable)
-    os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY  # Ensure LangChain picks it up
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+    # Initialize OpenAI embeddings with text-embedding-3-small
+    os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 
     # Qdrant client setup
     qdrant_client = QdrantClient(
         host=context.op_config["qdrant_host"],
-        port=context.op_config["qdrant_port"]
+        port=context.op_config["qdrant_port"],
+        api_key=context.op_config["qdrant_api_key"],
+        https=False
     )
 
     # Generate embeddings
     texts = [doc.page_content for doc in documents]
     embedding_vectors = embeddings.embed_documents(texts)
 
-    # Prepare points for Qdrant
+    # Prepare points for Qdrant with updated payload schema
     points = [
         models.PointStruct(
             id=idx,
             vector=vector,
-            payload={"text": doc.page_content, "metadata": doc.metadata}
+            payload={"raw_text": doc.page_content}
         )
         for idx, (vector, doc) in enumerate(zip(embedding_vectors, documents))
     ]
 
     # Upsert points into Qdrant
+    collection_name = context.op_config["qdrant_collection"]
     qdrant_client.upsert(
         collection_name=collection_name,
         points=points
@@ -180,16 +142,18 @@ def embed_and_store(context, documents, collection_name):
 
     context.log.info(f"Stored {len(points)} embeddings in Qdrant collection: {collection_name}")
 
+# Define the job
 @job
 def html_embedding_job():
     documents = fetch_and_chunk_html()
-    collection_name = setup_qdrant_collection()
-    embed_and_store(documents=documents, collection_name=collection_name)
+    embed_and_store(documents=documents)
 
+# Define the repository
 @repository
 def aqyn():
     return [html_embedding_job]
 
+# Execute the job in-process (for testing)
 if __name__ == "__main__":
     result = html_embedding_job.execute_in_process(
         run_config={
@@ -202,17 +166,12 @@ if __name__ == "__main__":
                         "minio_bucket": MINIO_BUCKET,
                     }
                 },
-                "setup_qdrant_collection": {
-                    "config": {
-                        "qdrant_host": QDRANT_HOST,
-                        "qdrant_port": QDRANT_PORT,
-                        "qdrant_collection": QDRANT_COLLECTION
-                    }
-                },
                 "embed_and_store": {
                     "config": {
                         "qdrant_host": QDRANT_HOST,
-                        "qdrant_port": QDRANT_PORT
+                        "qdrant_port": QDRANT_PORT,
+                        "qdrant_api_key": QDRANT_API_KEY,
+                        "qdrant_collection": QDRANT_COLLECTION
                     }
                 }
             }
