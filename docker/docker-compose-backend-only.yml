@@ -1,0 +1,53 @@
+version: "3.9"
+
+services:
+  dagster-webserver:
+    build:
+      context: .
+      dockerfile: ./dag/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - PYTHONPATH=/opt/dagster/app
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - QDRANT_COLLECTION=aqyn
+      - DAGSTER_HOME=/opt/dagster/dagster_home
+    depends_on:
+      - qdrant
+    volumes:
+      - dagster_home1:/opt/dagster/dagster_home
+      - ./dag/dagster.yaml:/opt/dagster/dagster.yaml
+      - ./data:/opt/dagster/data
+    command: ["dagster-webserver", "-h", "0.0.0.0", "-p", "3000", "-w", "/opt/dagster/app/workspace.yaml"]
+
+  dagster-daemon:
+    build:
+      context: .
+      dockerfile: ./dag/Dockerfile
+    environment:
+      - DAGSTER_HOME=/opt/dagster/dagster_home
+    depends_on:
+      - dagster-webserver
+    volumes: # Make docker client accessible so we can launch containers using host docker
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/io_manager_storage:/tmp/io_manager_storage
+      - dagster_home1:/opt/dagster/dagster_home
+      - ./data:/opt/dagster/data
+    command: ["dagster-daemon", "run"]
+
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=aqyn    # Updated to recommended variable name
+      - MINIO_ROOT_PASSWORD=aqynpassword  # Updated to recommended variable name
+    command: server /data/minio --console-address ":9001"  # Added server command
+    volumes:
+      - data_volume:/data/minio
+
+volumes:
+  data_volume:  # Single named volume
+  dagster_home1:
