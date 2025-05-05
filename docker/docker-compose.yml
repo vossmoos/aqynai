@@ -1,86 +1,143 @@
 version: "3.9"
 
 services:
-  langflow:
-    user: root
-    image: langflowai/langflow:latest 
-    pull_policy: always  
-    ports:
-      - "7860:7860"
-    volumes:
-      - data_volume:/app/data/langflow  # Langflow data in subdirectory
-    depends_on:
-      - qdrant
-      - dagster-webserver
-      - minio
-    environment:
-      - LANGFLOW_DATABASE_URL=sqlite:///data/langflow/langflow.db # Updated path
-      - QDRANT_URL=http://qdrant:6333
-      - QDRANT_PORT=6333
-      - QDRANT_COLLECTION=aqyn
-      - LANGFLOW_S3_ENDPOINT=minio:9000
-      - LANGFLOW_S3_ACCESS_KEY_ID=aqyn
-      - LANGFLOW_S3_SECRET_ACCESS_KEY=aqynpassword
-      - LANGFLOW_S3_BUCKET_NAME=aqyn-bucket
-
-  qdrant:
-    image: qdrant/qdrant:latest
-    ports:
-      - "6333:6333"
-      - "6334:6334"
-    environment:
-      - QDRANT__SERVICE__API_KEY=f47ac10b-58cc-4372-a567-0e02b2c3d479
-    volumes:
-      - data_volume:/qdrant/data  # Qdrant data in subdirectory
-
   dagster-webserver:
     build:
       context: .
       dockerfile: ./dag/Dockerfile
     ports:
-      - "3000:3000"
+      - "${DAGSTER_WEBSERVER_PORT:-3000}:3000"
     environment:
       - PYTHONPATH=/opt/dagster/app
-      - QDRANT_HOST=qdrant
-      - QDRANT_PORT=6333
-      - QDRANT_COLLECTION=aqyn
+      - QDRANT_HOST=${QDRANT_HOST:-rag.aqyn.tech}
+      - QDRANT_PORT=${QDRANT_PORT:-6333}
+      - QDRANT_API_KEY=${QDRANT_API_KEY}
+      - QDRANT_COLLECTION=${QDRANT_COLLECTION:-aqyn}
       - DAGSTER_HOME=/opt/dagster/dagster_home
-    depends_on:
-      - qdrant
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DAGSTER_POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - DAGSTER_POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - DAGSTER_POSTGRES_DB=${POSTGRES_DB:-dagster}
+      - DAGSTER_POSTGRES_HOST=postgres
+      - DAGSTER_POSTGRES_PORT=5432
     volumes:
-      - dagster_home1:/opt/dagster/dagster_home
+      - dagster_home:/opt/dagster/dagster_home
       - ./dag/dagster.yaml:/opt/dagster/dagster.yaml
       - ./data:/opt/dagster/data
     command: ["dagster-webserver", "-h", "0.0.0.0", "-p", "3000", "-w", "/opt/dagster/app/workspace.yaml"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend
 
   dagster-daemon:
     build:
       context: .
       dockerfile: ./dag/Dockerfile
     environment:
+      - QDRANT_HOST=${QDRANT_HOST:-rag.aqyn.tech}
+      - QDRANT_PORT=${QDRANT_PORT:-6333}
+      - QDRANT_API_KEY=${QDRANT_API_KEY}
+      - QDRANT_COLLECTION=${QDRANT_COLLECTION:-aqyn}
       - DAGSTER_HOME=/opt/dagster/dagster_home
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DAGSTER_POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - DAGSTER_POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - DAGSTER_POSTGRES_DB=${POSTGRES_DB:-dagster}
+      - DAGSTER_POSTGRES_HOST=postgres
+      - DAGSTER_POSTGRES_PORT=5432
     depends_on:
       - dagster-webserver
-    volumes: # Make docker client accessible so we can launch containers using host docker
+      - postgres
+    volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /tmp/io_manager_storage:/tmp/io_manager_storage
-      - dagster_home1:/opt/dagster/dagster_home
+      - dagster_home:/opt/dagster/dagster_home
       - ./data:/opt/dagster/data
     command: ["dagster-daemon", "run"]
-
+    networks:
+      - backend
 
   minio:
     image: minio/minio:latest
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
     environment:
-      - MINIO_ROOT_USER=aqyn    # Updated to recommended variable name
-      - MINIO_ROOT_PASSWORD=aqynpassword  # Updated to recommended variable name
-    command: server /data/minio --console-address ":9001"  # Added server command
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-aqyn}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-aqynpassword}
+    command: server /data/minio --console-address ":9001"
     volumes:
-      - data_volume:/data/minio
+      - minio_data:/data/minio
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  postgres:
+    image: postgres:13
+    container_name: postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-dagster}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  hasura:
+    image: hasura/graphql-engine:v2.34.0
+    container_name: hasura
+    ports:
+      - "${HASURA_PORT:-8080}:8080"
+    environment:
+      - HASURA_GRAPHQL_DATABASE_URL=postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-dagster}
+      - HASURA_GRAPHQL_ENABLE_CONSOLE=${HASURA_GRAPHQL_ENABLE_CONSOLE:-true}
+      - HASURA_GRAPHQL_DEV_MODE=${HASURA_GRAPHQL_DEV_MODE:-true}
+      - HASURA_GRAPHQL_ADMIN_SECRET=${HASURA_GRAPHQL_ADMIN_SECRET:-somesecret}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - ./api:/app
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-dagster}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend
 
 volumes:
-  data_volume:  # Single named volume
-  dagster_home1:
+  minio_data:
+  postgres_data:
+  dagster_home:
+
+networks:
+  backend:
+    driver: bridge
