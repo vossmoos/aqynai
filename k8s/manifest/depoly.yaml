@@ -1,0 +1,415 @@
+---
+# Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aqyn
+
+---
+# ConfigMap for environment variables
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: aqyn
+data:
+  DAGSTER_WEBSERVER_PORT: "3000"
+  QDRANT_HOST: "rag.aqyn.tech"
+  QDRANT_PORT: "6333"
+  QDRANT_COLLECTION: "aqyn"
+  DAGSTER_HOME: "/opt/dagster/dagster_home"
+  DAGSTER_POSTGRES_USER: "postgres"
+  DAGSTER_POSTGRES_PASSWORD: "postgres"
+  DAGSTER_POSTGRES_DB: "dagster"
+  DAGSTER_POSTGRES_HOST: "postgres-service"
+  DAGSTER_POSTGRES_PORT: "5432"
+  MINIO_API_PORT: "9000"
+  MINIO_CONSOLE_PORT: "9001"
+  MINIO_ROOT_USER: "aqyn"
+  MINIO_ROOT_PASSWORD: "aqynpassword"
+  POSTGRES_USER: "postgres"
+  POSTGRES_PASSWORD: "postgres"
+  POSTGRES_DB: "dagster"
+  POSTGRES_PORT: "5432"
+  HASURA_PORT: "8080"
+  HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+  HASURA_GRAPHQL_DEV_MODE: "true"
+  HASURA_GRAPHQL_ADMIN_SECRET: "somesecret"
+  API_PORT: "8000"
+  PYTHONPATH: "/opt/dagster/app"
+
+---
+# Secret for sensitive data
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secrets
+  namespace: aqyn
+type: Opaque
+stringData:
+  QDRANT_API_KEY: ""  # Set this value
+  OPENAI_API_KEY: ""  # Set this value
+
+---
+# Persistent Volume Claims
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-data-pvc
+  namespace: aqyn
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data-pvc
+  namespace: aqyn
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+# PostgreSQL Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: aqyn
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      initContainers:
+      - name: postgres-init
+        image: postgres:13
+        command: ['sh', '-c', 'mkdir -p /var/lib/postgresql/data/pgdata && chown postgres:postgres /var/lib/postgresql/data/pgdata']
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        securityContext:
+          runAsUser: 0  # Run as root to set permissions
+      containers:
+      - name: postgres
+        image: postgres:13
+        ports:
+        - containerPort: 5432
+        envFrom:
+        - configMapRef:
+            name: app-config
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: POSTGRES_DB
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+          subPath: pgdata
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - postgres
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - postgres
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+      volumes:
+      - name: postgres-data
+        persistentVolumeClaim:
+          claimName: postgres-data-pvc
+
+---
+# PostgreSQL Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: aqyn
+spec:
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
+  type: ClusterIP
+
+---
+# MinIO Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio
+  namespace: aqyn
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      containers:
+      - name: minio
+        image: minio/minio:latest
+        ports:
+        - containerPort: 9000
+        - containerPort: 9001
+        args:
+        - server
+        - /data/minio
+        - --console-address
+        - ":9001"
+        envFrom:
+        - configMapRef:
+            name: app-config
+        volumeMounts:
+        - name: minio-data
+          mountPath: /data/minio
+        livenessProbe:
+          httpGet:
+            path: /minio/health/live
+            port: 9000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /minio/health/live
+            port: 9000
+          initialDelaySeconds: 5
+          periodSeconds: 30
+          timeoutSeconds: 20
+      volumes:
+      - name: minio-data
+        persistentVolumeClaim:
+          claimName: minio-data-pvc
+
+---
+# MinIO Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-service
+  namespace: aqyn
+spec:
+  selector:
+    app: minio
+  ports:
+  - name: api
+    port: 9000
+    targetPort: 9000
+  - name: console
+    port: 9001
+    targetPort: 9001
+  type: ClusterIP
+
+---
+# Dagster Webserver Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dagster-webserver
+  namespace: aqyn
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dagster-webserver
+  template:
+    metadata:
+      labels:
+        app: dagster-webserver
+    spec:
+      containers:
+      - name: dagster-webserver
+        image: jyothiram266/dagster-app:v1.0.0  # Replace with your actual image
+        ports:
+        - containerPort: 3000
+        command:
+        - dagster-webserver
+        - -h
+        - "0.0.0.0"
+        - -p
+        - "3000"
+        - -w
+        - "/opt/dagster/app/workspace.yaml"
+        envFrom:
+        - configMapRef:
+            name: app-config
+        - secretRef:
+            name: app-secrets
+
+
+---
+# Dagster Webserver Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: dagster-webserver-service
+  namespace: aqyn
+spec:
+  selector:
+    app: dagster-webserver
+  ports:
+  - port: 3000
+    targetPort: 3000
+  type: ClusterIP
+
+---
+# Dagster Daemon Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dagster-daemon
+  namespace: aqyn
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dagster-daemon
+  template:
+    metadata:
+      labels:
+        app: dagster-daemon
+    spec:
+      containers:
+      - name: dagster-daemon
+        image: jyothiram266/dagster-app:v1.0.0   # Replace with your actual image
+        command:
+        - dagster-daemon
+        - run
+        envFrom:
+        - configMapRef:
+            name: app-config
+        - secretRef:
+            name: app-secrets
+
+
+---
+# Hasura Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hasura
+  namespace: aqyn
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hasura
+  template:
+    metadata:
+      labels:
+        app: hasura
+    spec:
+      containers:
+      - name: hasura
+        image: hasura/graphql-engine:v2.34.0
+        ports:
+        - containerPort: 8080
+        env:
+        - name: HASURA_GRAPHQL_DATABASE_URL
+          value: "postgres://postgres:postgres@postgres-service:5432/dagster"
+        envFrom:
+        - configMapRef:
+            name: app-config
+
+---
+# Hasura Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: hasura-service
+  namespace: aqyn
+spec:
+  selector:
+    app: hasura
+  ports:
+  - port: 8080
+    targetPort: 8080
+  type: ClusterIP
+
+---
+# API Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aqyn-api
+  namespace: aqyn
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aqyn-api
+  template:
+    metadata:
+      labels:
+        app: aqyn-api
+    spec:
+      containers:
+      - name: aqyn-api
+        image: jyothiram266/aqyn-api:v1.0.0  # Replace with your actual image
+        ports:
+        - containerPort: 8000
+        env:
+        - name: POSTGRES_HOST
+          value: "postgres-service"
+        envFrom:
+        - configMapRef:
+            name: app-config
+
+---
+# API Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-service
+  namespace: aqyn
+spec:
+  selector:
+    app: aqyn-api
+  ports:
+  - port: 8000
+    targetPort: 8000
+  type: ClusterIP
+
+---
