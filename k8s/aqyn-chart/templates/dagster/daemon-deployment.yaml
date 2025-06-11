@@ -1,0 +1,47 @@
+{{- if .Values.dagster.daemon.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "aqyn.fullname" . }}-dagster-daemon
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "aqyn.dagster-daemon.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.dagster.daemon.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "aqyn.dagster-daemon.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "aqyn.dagster-daemon.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: dagster-daemon
+        image: "{{ .Values.dagster.daemon.image.repository }}:{{ .Values.dagster.daemon.image.tag }}"
+        imagePullPolicy: {{ .Values.dagster.daemon.image.pullPolicy }}
+        command:
+        - dagster-daemon
+        - run
+        envFrom:
+        - configMapRef:
+            name: {{ include "aqyn.fullname" . }}-config
+        - secretRef:
+            name: {{ include "aqyn.fullname" . }}-secrets
+        {{- with .Values.dagster.daemon.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+{{- end }}

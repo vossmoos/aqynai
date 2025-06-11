@@ -1,0 +1,54 @@
+{{- if .Values.dagster.webserver.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "aqyn.fullname" . }}-dagster-webserver
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "aqyn.dagster-webserver.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.dagster.webserver.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "aqyn.dagster-webserver.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "aqyn.dagster-webserver.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: dagster-webserver
+        image: "{{ .Values.dagster.webserver.image.repository }}:{{ .Values.dagster.webserver.image.tag }}"
+        imagePullPolicy: {{ .Values.dagster.webserver.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.dagster.webserver.service.port }}
+        command:
+        - dagster-webserver
+        - -h
+        - "0.0.0.0"
+        - -p
+        - "{{ .Values.dagster.webserver.service.port }}"
+        - -w
+        - "/opt/dagster/app/workspace.yaml"
+        envFrom:
+        - configMapRef:
+            name: {{ include "aqyn.fullname" . }}-config
+        - secretRef:
+            name: {{ include "aqyn.fullname" . }}-secrets
+        {{- with .Values.dagster.webserver.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+{{- end }}

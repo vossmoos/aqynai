@@ -1,0 +1,7 @@
+apiVersion: v2
+name: aqyn
+description: A Helm chart for Aqyn application stack with PostgreSQL, MinIO, Dagster, Hasura, and API services
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+

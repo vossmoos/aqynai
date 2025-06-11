@@ -1,0 +1,47 @@
+{{- if .Values.hasura.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "aqyn.fullname" . }}-hasura
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "aqyn.hasura.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.hasura.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "aqyn.hasura.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "aqyn.hasura.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: hasura
+        image: "{{ .Values.hasura.image.repository }}:{{ .Values.hasura.image.tag }}"
+        imagePullPolicy: {{ .Values.hasura.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.hasura.service.port }}
+        env:
+        - name: HASURA_GRAPHQL_DATABASE_URL
+          value: "postgres://{{ .Values.config.postgres.user }}:{{ .Values.config.postgres.password }}@{{ include "aqyn.fullname" . }}-postgres-service:{{ .Values.config.postgres.port }}/{{ .Values.config.postgres.database }}"
+        envFrom:
+        - configMapRef:
+            name: {{ include "aqyn.fullname" . }}-config
+        {{- with .Values.hasura.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+{{- end }}

@@ -1,0 +1,75 @@
+{{- if .Values.minio.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "aqyn.fullname" . }}-minio
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "aqyn.minio.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "aqyn.minio.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "aqyn.minio.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: minio
+        image: "{{ .Values.minio.image.repository }}:{{ .Values.minio.image.tag }}"
+        imagePullPolicy: {{ .Values.minio.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.minio.service.apiPort }}
+        - containerPort: {{ .Values.minio.service.consolePort }}
+        args:
+        - server
+        - /data/minio
+        - --console-address
+        - ":{{ .Values.minio.service.consolePort }}"
+        envFrom:
+        - configMapRef:
+            name: {{ include "aqyn.fullname" . }}-config
+        volumeMounts:
+        - name: minio-data
+          mountPath: /data/minio
+        livenessProbe:
+          httpGet:
+            path: /minio/health/live
+            port: {{ .Values.minio.service.apiPort }}
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /minio/health/live
+            port: {{ .Values.minio.service.apiPort }}
+          initialDelaySeconds: 5
+          periodSeconds: 30
+          timeoutSeconds: 20
+        {{- with .Values.minio.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      volumes:
+      - name: minio-data
+        {{- if .Values.minio.persistence.enabled }}
+        persistentVolumeClaim:
+          claimName: {{ include "aqyn.fullname" . }}-minio-data-pvc
+        {{- else }}
+        emptyDir: {}
+        {{- end }}
+{{- end }}

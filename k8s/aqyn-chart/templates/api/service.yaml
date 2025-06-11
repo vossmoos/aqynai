@@ -1,0 +1,18 @@
+{{- if .Values.api.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "aqyn.fullname" . }}-api-service
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "aqyn.api.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.api.service.type }}
+  ports:
+  - port: {{ .Values.api.service.port }}
+    targetPort: {{ .Values.api.service.port }}
+    protocol: TCP
+    name: api
+  selector:
+    {{- include "aqyn.api.selectorLabels" . | nindent 4 }}
+{{- end }}

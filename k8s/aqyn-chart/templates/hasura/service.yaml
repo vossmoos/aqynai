@@ -1,0 +1,18 @@
+{{- if .Values.hasura.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "aqyn.fullname" . }}-hasura-service
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "aqyn.hasura.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.hasura.service.type }}
+  ports:
+  - port: {{ .Values.hasura.service.port }}
+    targetPort: {{ .Values.hasura.service.port }}
+    protocol: TCP
+    name: hasura
+  selector:
+    {{- include "aqyn.hasura.selectorLabels" . | nindent 4 }}
+{{- end }}

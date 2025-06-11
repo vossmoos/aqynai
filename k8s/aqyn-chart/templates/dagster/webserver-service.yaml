@@ -1,0 +1,18 @@
+{{- if .Values.dagster.webserver.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "aqyn.fullname" . }}-dagster-webserver-service
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "aqyn.dagster-webserver.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.dagster.webserver.service.type }}
+  ports:
+  - port: {{ .Values.dagster.webserver.service.port }}
+    targetPort: {{ .Values.dagster.webserver.service.port }}
+    protocol: TCP
+    name: webserver
+  selector:
+    {{- include "aqyn.dagster-webserver.selectorLabels" . | nindent 4 }}
+{{- end }}

@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "aqyn.fullname" . }}-config
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "aqyn.labels" . | nindent 4 }}
+data:
+  DAGSTER_WEBSERVER_PORT: {{ .Values.config.dagster.webserverPort | quote }}
+  QDRANT_HOST: {{ .Values.config.qdrant.host | quote }}
+  QDRANT_PORT: {{ .Values.config.qdrant.port | quote }}
+  QDRANT_COLLECTION: {{ .Values.config.qdrant.collection | quote }}
+  DAGSTER_HOME: {{ .Values.config.dagster.home | quote }}
+  DAGSTER_POSTGRES_USER: {{ .Values.config.postgres.user | quote }}
+  DAGSTER_POSTGRES_PASSWORD: {{ .Values.config.postgres.password | quote }}
+  DAGSTER_POSTGRES_DB: {{ .Values.config.postgres.database | quote }}
+  DAGSTER_POSTGRES_HOST: {{ include "aqyn.fullname" . }}-postgres-service
+  DAGSTER_POSTGRES_PORT: {{ .Values.config.postgres.port | quote }}
+  MINIO_API_PORT: {{ .Values.config.minio.apiPort | quote }}
+  MINIO_CONSOLE_PORT: {{ .Values.config.minio.consolePort | quote }}
+  MINIO_ROOT_USER: {{ .Values.config.minio.rootUser | quote }}
+  MINIO_ROOT_PASSWORD: {{ .Values.config.minio.rootPassword | quote }}
+  POSTGRES_USER: {{ .Values.config.postgres.user | quote }}
+  POSTGRES_PASSWORD: {{ .Values.config.postgres.password | quote }}
+  POSTGRES_DB: {{ .Values.config.postgres.database | quote }}
+  POSTGRES_PORT: {{ .Values.config.postgres.port | quote }}
+  HASURA_PORT: {{ .Values.config.hasura.port | quote }}
+  HASURA_GRAPHQL_ENABLE_CONSOLE: {{ .Values.config.hasura.enableConsole | quote }}
+  HASURA_GRAPHQL_DEV_MODE: {{ .Values.config.hasura.devMode | quote }}
+  HASURA_GRAPHQL_ADMIN_SECRET: {{ .Values.config.hasura.adminSecret | quote }}
+  API_PORT: {{ .Values.config.api.port | quote }}
+  PYTHONPATH: {{ .Values.config.dagster.pythonPath | quote }}

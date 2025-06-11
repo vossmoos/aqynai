@@ -1,0 +1,205 @@
+# Default values for aqyn.
+# This is a YAML-formatted file.
+# Declare variables to be substituted into your templates.
+
+# Global settings
+global:
+  namespace: aqyn
+
+# Application configuration
+config:
+  dagster:
+    webserverPort: "3000"
+    home: "/opt/dagster/dagster_home"
+    pythonPath: "/opt/dagster/app"
+  qdrant:
+    host: "rag.aqyn.tech"
+    port: "6333"
+    collection: "aqyn"
+  postgres:
+    user: "postgres"
+    password: "postgres"
+    database: "dagster"
+    port: "5432"
+  minio:
+    apiPort: "9000"
+    consolePort: "9001"
+    rootUser: "aqyn"
+    rootPassword: "aqynpassword"
+  hasura:
+    port: "8080"
+    enableConsole: "true"
+    devMode: "true"
+    adminSecret: "somesecret"
+  api:
+    port: "8000"
+
+# Secrets (these should be set via --set or separate values file)
+secrets:
+  qdrantApiKey: ""
+  openaiApiKey: ""
+
+# PostgreSQL configuration
+postgres:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "13"
+    pullPolicy: IfNotPresent
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  
+  persistence:
+    enabled: true
+    storageClass: ""
+    size: 1Gi
+    accessMode: ReadWriteOnce
+  
+  service:
+    type: ClusterIP
+    port: 5432
+
+# MinIO configuration
+minio:
+  enabled: true
+  image:
+    repository: minio/minio
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  
+  persistence:
+    enabled: true
+    storageClass: ""
+    size: 1Gi
+    accessMode: ReadWriteOnce
+  
+  service:
+    type: ClusterIP
+    apiPort: 9000
+    consolePort: 9001
+
+# Dagster configuration
+dagster:
+  webserver:
+    enabled: true
+    replicaCount: 1
+    image:
+      repository: jyothiram266/dagster-app
+      tag: v1.0.0
+      pullPolicy: IfNotPresent
+    
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    
+    service:
+      type: ClusterIP
+      port: 3000
+  
+  daemon:
+    enabled: true
+    replicaCount: 1
+    image:
+      repository: jyothiram266/dagster-app
+      tag: v1.0.0
+      pullPolicy: IfNotPresent
+    
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+# Hasura configuration
+hasura:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: hasura/graphql-engine
+    tag: v2.34.0
+    pullPolicy: IfNotPresent
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  
+  service:
+    type: ClusterIP
+    port: 8080
+
+# API configuration
+api:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: jyothiram266/aqyn-api
+    tag: v1.0.0
+    pullPolicy: IfNotPresent
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  
+  service:
+    type: ClusterIP
+    port: 8000
+
+# Ingress configuration (optional)
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: aqyn.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service: api-service
+          port: 8000
+        - path: /dagster
+          pathType: Prefix
+          service: dagster-webserver-service
+          port: 3000
+        - path: /hasura
+          pathType: Prefix
+          service: hasura-service
+          port: 8080
+  tls: []
+  #  - secretName: aqyn-tls
+  #    hosts:
+  #      - aqyn.local
+
+# Node selector, tolerations and affinity
+nodeSelector: {}
+tolerations: []
+affinity: {}
