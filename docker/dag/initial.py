@@ -14,7 +14,7 @@ DEFAULT_MINIO_SECRET_KEY = "aqynpassword"
 DEFAULT_MINIO_BUCKET = "aqyn-bucket"
 DEFAULT_QDRANT_HOST = "rag.aqyn.tech"
 DEFAULT_QDRANT_PORT = 6333
-DEFAULT_QDRANT_API_KEY = "e47ac10b-58c0-4372-a567-0e02b2c3d422"
+DEFAULT_QDRANT_API_KEY = "xxx"
 DEFAULT_QDRANT_COLLECTION = "aqyn"
 
 # Resolve actual values from environment or defaults
